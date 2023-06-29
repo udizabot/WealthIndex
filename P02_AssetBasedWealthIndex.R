@@ -49,7 +49,6 @@ cut.off <- 5
 
 
 
-
 ###########################################################################
 # Inventory of Durable Goods ----------------------------------------------
 
@@ -124,7 +123,7 @@ Housing <- Domicilio %>%
             across(where(is.numeric), ~replace_na(.x, 0))) %>%
     transform( . , 
                floor = case_when(c.floor == 2 ~ 1, c.floor == 3 ~ 2, c.floor == 4 ~ 3, c.floor == 6 ~ 4, c.floor == 1 | c.floor == 5 | c.floor == 7 ~ 5), 
-               flush = case_when(c.flush == 1 ~ 1, c.flush == 2 | c.flush == 2 | c.flush == 3 ~ 2, c.flush == 5 ~ 3, c.flush == 6 | c.flush == 7 ~ 4),
+               flush = case_when(c.flush == 1 ~ 1, c.flush == 2 | c.flush == 3 | c.flush == 4 ~ 2, c.flush == 5 ~ 3, c.flush == 6 | c.flush == 7 ~ 4),
                water = case_when(c.water == 1 | c.water == 4 ~ 1, c.water == 2 | c.water == 5 ~ 2, c.water == 3 | c.water == 6 ~ 1),
                power = case_when(power.network == 1 ~ 1, power.network == 2 | power.network == 3 | power.network == 4 ~ 2), 
                pave = case_when(street.pave == 1 ~ 1, street.pave == 2 ~ 2), 
@@ -138,34 +137,6 @@ Housing <- Domicilio %>%
 
 
             
-
-
-###########################################################################
-# Demographics ------------------------------------------------------------
-
-Demographics <- Morador %>%
-    transform( . , 
-               control = paste0(UF, NUM_SEQ, NUM_DV, NUM_DOM, NUM_UC), 
-               person = paste0(UF, NUM_SEQ, NUM_DV, NUM_DOM, NUM_UC, COD_INFORMANTE)) %>%
-    filter( . , 
-            V0306 < cut.off) %>%
-    transform( . , 
-               member = V0306,
-               gender = V0404, 
-               age = V0403, 
-               race = case_when(V0405 == 1 ~ "white", V0405 == 2 ~ "black", V0405 == 3 ~ "asian", V0405 == 4 ~ "brown", V0405 == 5 ~ "indian", V0405 == 8 ~ "other"),
-               schooling = ANOS_ESTUDO, 
-               credit.card = V04091,
-               health.insurance = V04061, 
-               children = case_when(V0403 <= 14 ~ 1),
-               adults = case_when(V0403 >= 15 ~ 1),
-               elderly = case_when(V0403 >= 66 ~ 1))
-
-
-
-
-
-
 
 
 
