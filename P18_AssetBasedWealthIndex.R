@@ -1,6 +1,7 @@
 
-###########################################################################
-# Household Wealth Index --------------------------------------------------
+###########################################################################s
+# Asset-Base Wealth Index -------------------------------------------------
+# 2018 --------------------------------------------------------------------
 ###########################################################################
 
 ## Considering the Updated Data of March 2021
@@ -10,31 +11,28 @@
 ## We also create an ordinal PCA index, an Filmer-Pritchett PCA index and a Simple Index
 ## Besides, we consider the adjustment based on Banerjee (2010)
 
-
 # Libraries ---------------------------------------------------------------
 pacman::p_load(tidyverse, SciViews, psych, matlib, fastDummies)
 
-
-
 # Working Directory -------------------------------------------------------
-setwd("C:/Users/udiza/OneDrive/Área de Trabalho/Thesis Empirical Analysis/DataBase POF2018 [updated 03.21]/Dados") 
+setwd("C:/EmpiricalResearch/DataSourcePOF/DataSourcePOF/POF2018/Dados_20221226") 
 
 
 # Import DataSets ---------------------------------------------------------
-Morador <- readRDS("MORADOR.rds") %>%
+Morador <- readRDS("MoradorP18.rds") %>%
     transform( . ,
-               NUM_DOM = str_pad(NUM_DOM, width = 2, side = "left", pad = "0"), 
-               COD_INFORMANTE = str_pad(COD_INFORMANTE, width = 2, side = "left", pad = "0"))  
+               NUM_DOM = str_pad(NUM_DOM, width = 2, side = "left", pad = "0"),
+               NUM_UC = str_pad(NUM_UC, 2, pad = "0"),
+               COD_INFORMANTE = str_pad(COD_INFORMANTE, width = 2, side = "left", pad = "0")) %>% as_tibble() 
 
-
-Inventario <- readRDS("INVENTARIO.rds") %>%
+Inventario <- readRDS("InventarioP18.rds")  %>%
     transform( . ,
-               NUM_DOM = str_pad(NUM_DOM, width = 2, side = "left", pad = "0")) 
+               NUM_DOM = str_pad(NUM_DOM, width = 2, side = "left", pad = "0"),
+               NUM_UC = str_pad(NUM_UC, 2, pad = "0")) %>% as_tibble() 
 
-
-Domicilio <- readRDS("DOMICILIO.rds") %>%
+Domicilio <- readRDS("DomicilioP18.rds") %>%
     transform( . ,
-               NUM_DOM = str_pad(NUM_DOM, width = 2, side = "left", pad = "0")) 
+               NUM_DOM = str_pad(NUM_DOM, width = 2, side = "left", pad = "0")) %>% as_tibble() 
 
 
 
@@ -45,64 +43,10 @@ Domicilio <- readRDS("DOMICILIO.rds") %>%
 
 
 
-# Housing Characteristics -------------------------------------------------
-
-## In this section, we create dichotomy variables for housing characteristics
-
-## Note that the suffix c stand for Categorical
-## Note that the suffix n stand for Count (number)
-## Note that the suffix d stand for Dummy 
-
-## We create order categorical variables 
-
-Housing <- transform(Domicilio, 
-                     house.control = paste0(COD_UPA, NUM_DOM),
-                     c.wall = V0202,
-                     c.roof = V0203, 
-                     c.floor = V0204, 
-                     n.rooms = V0205,
-                     n.bedrooms = V0206,
-                     c.water = V0207,
-                     n.bathrooms = V02111, 
-                     c.flush = V0212,
-                     c.trash = V0213, 
-                     power.network = V02141, 
-                     c.property = V0217, 
-                     street.pave = V0220) %>%
-    replace_na(list(c.flush = 0)) %>%
-    transform( . , 
-               c.wall = ifelse(c.wall == 1, 4, 
-                               ifelse(c.wall == 2 | c.wall == 3, 2, 
-                                      ifelse(c.wall == 4, 3, 1))),
-               c.roof = ifelse(c.roof == 1 | c.roof == 2 | c.roof == 3, 4, 
-                               ifelse(c.roof == 4, 3, 
-                                      ifelse(c.roof == 5, 2, 1))),
-               c.floor = ifelse(c.floor == 1, 4,
-                                ifelse(c.floor == 2, 3, 
-                                       ifelse(c.floor == 3, 2, 1))),
-               c.water = ifelse(c.water == 1, 4, 
-                                ifelse(c.water == 2, 3, 
-                                       ifelse(c.water == 3 | c.water == 4, 2, 1))),
-               c.flush = ifelse(c.flush == 1, 4, 
-                                ifelse(c.flush == 2 | c.flush == 3, 3,
-                                       ifelse(c.flush == 4, 2, 1))), 
-               c.trash = ifelse(c.trash == 1, 4, 
-                                ifelse(c.trash == 2, 3, 
-                                       ifelse(c.trash == 3 | c.trash == 4, 2, 1))),
-               c.property = ifelse(c.property == 1 | c.property == 2, 4, 
-                                   ifelse(c.property == 3, 3, 
-                                          ifelse(c.property == 4, 2, 1))),
-               d.power = ifelse(power.network == 1, 1, 0), 
-               d.pave = ifelse(street.pave == 1, 1, 0)
-    ) %>%
-    select( . , 
-            UF, PESO_FINAL, house.control, c.wall, c.roof, c.floor, n.rooms, 
-            c.water, n.bathrooms, c.flush, c.trash, c.property, d.power, d.pave ) %>%
-    as_tibble()
 
 
-
-# Durable Goods Ownership -------------------------------------------------
+###########################################################################
+# Inventory of Durable Goods ----------------------------------------------
 
 ## In this case, we consider a variable of indicator for ownership of durable good.
 ## Also, we create a variable for the number of durable good owned by household
@@ -111,53 +55,92 @@ Inventory <- transform(Inventario,
                        code = round(V9001/100), 
                        control = paste0(COD_UPA, NUM_DOM, NUM_UC), 
                        house.control = paste0(COD_UPA, NUM_DOM)) %>%
-    transform( . , 
-               stove = ifelse(code == 14001, 1, 0), 
-               freezer = ifelse(code == 14002, 1, 0), 
-               refrigerator = ifelse(code == 14003 | code == 14004, 1, 0), 
-               refrigerator11 = ifelse(code == 14003, 1, 0),
-               refrigerator12 = ifelse(code == 14004, 1, 0),
-               purifier = ifelse(code == 14007, 1, 0),
-               dishwasher = ifelse(code == 14008, 1, 0), 
-               microwave = ifelse(code == 14009, 1, 0),
-               eletric.oven = ifelse(code == 14010, 1, 0),
-               washing = ifelse(code == 14012, 1, 0), 
-               television = ifelse(code == 14014, 1, 0), 
-               computer = ifelse(code == 14019, 1, 0), 
-               tablet = ifelse(code == 14020, 1, 0),
-               air = ifelse(code == 14021, 1, 0), 
-               car = ifelse(code == 14030, 1, 0), 
-               moto = ifelse(code ==14031, 1, 0), 
-               bike = ifelse(code == 14032, 1, 0)) %>%
+    transform( . ,
+               stove = case_when(code == 14001 ~ V9005), 
+               freezer = case_when(code == 14002 ~ V9005), 
+               refrigerator = case_when(code == 14003 | code == 14004 ~ V9005), 
+               dishwasher = case_when(code == 14032 ~ V9005), 
+               washing = case_when(code == 14012 ~ V9005), 
+               microwave = case_when(code == 14026 ~ V9005),
+               purifier = case_when(code == 14025 ~ V9005),
+               air.condic = case_when(code == 14017 ~ V9005), 
+               television = case_when(code == 14013 ~ V9005),
+               computer = case_when(code == 14024 ~ V9005),
+               car = case_when(code == 14021 ~ V9005), 
+               moto = case_when(code == 14023 ~ V9005), 
+               bike = case_when(code == 14022 ~ V9005), 
+               eletric.oven = case_when(code == 14010 ~ V9005)) %>%
+    mutate( . , 
+            across(where(is.numeric), ~replace_na(.x, 0))) %>%
     group_by(control) %>%
     mutate( . , 
-            d.stove = max(stove),
-            d.freezer = max(freezer), 
-            d.refrigerator = ifelse(max(refrigerator) >= 1, 1, 0),
-            d.refrigerator1 = max(refrigerator11),
-            d.refrigerator2 = max(refrigerator12),
-            d.purifier = max(purifier), 
-            d.dishwasher = max(dishwasher), 
-            d.microwave = max(microwave),
-            d.eletric.oven = max(eletric.oven),
-            d.washing = max(washing), 
-            d.television = max(television), 
-            d.computer = max(computer),
-            d.tablet = max(tablet),
-            d.air = max(air), 
-            d.car = max(car), 
-            d.moto = max(moto), 
-            d.bike = max(bike)) %>%
+            stove = max(stove), 
+            freezer = max(freezer),
+            refrigerator = max(refrigerator),
+            dishwasher = max(dishwasher),
+            washing = max(washing),
+            microwave = max(microwave),
+            elec.oven = max(eletric.oven),
+            purifier = max(purifier), 
+            air.condic = max(air.condic), 
+            television = max(television), 
+            computer = max(computer), 
+            car = max(car), 
+            moto = max(moto),
+            bike = max(bike)) %>%
     distinct( . , 
-              control, .keep_all = T) %>%
+              control, .keep_all = T) %>% 
     select( . , 
             UF, PESO_FINAL, RENDA_TOTAL, house.control, control, 
-            d.stove, d.freezer, d.refrigerator, d.refrigerator1, d.refrigerator2, d.purifier, 
-            d.dishwasher, d.microwave, d.eletric.oven, d.washing, d.television, 
-            d.computer, d.tablet, d.air, d.car, d.moto, d.bike) %>%
+            stove, freezer, refrigerator, dishwasher, washing, 
+            microwave, elec.oven, purifier, air.condic, television, 
+            computer, car, moto, bike) %>%
     as_tibble()
 
 
+
+
+###########################################################################
+# Housing Characteristics -------------------------------------------------
+
+Housing <- Domicilio %>%
+    transform( . , 
+               house.control = paste0(COD_UPA, NUM_DOM)) %>%
+    transform( . , 
+               wall = V0202, 
+               roof = V0203,
+               floor = V0204,
+               rooms = V0205,
+               bedrooms = V0206,
+               bathrooms = V02111, 
+               water = V0207,
+               flush = V0212, 
+               trash = V0213,
+               house = V0217,
+               power = V02141, 
+               pave = V0220) %>%
+    mutate( . , 
+            across(where(is.numeric), ~replace_na(.x, 0))) %>%
+    transform( . ,
+               wall = case_when(wall == 1 ~ 1, wall == 4 ~ 2, wall == 2 | wall == 3 ~ 3, wall == 5 ~ 4, wall == 6 ~ 5),
+               roof = case_when(roof == 1 | roof == 2 ~ 1, roof == 3 ~ 2, roof == 4 ~ 3, roof == 5 ~ 4, roof == 6 ~ 5),
+               floor = case_when(floor == 1 ~ 1, floor == 2 ~ 2, floor == 3 ~ 3, floor == 4 ~ 4, floor == 5 ~ 5), 
+               flush = case_when(flush == 1 ~ 1, flush == 2 | flush == 3 ~ 2, flush == 4 ~ 3, flush == 5 ~ 4),
+               trash = case_when(trash == 1 | trash == 2 ~ 1, trash == 3 | trash == 4 ~ 2, trash == 5 ~ 3, trash == 6 ~ 4),
+               water = case_when(water == 1 ~ 1, water == 2 | water == 3 | water == 4 ~ 2, water == 5 | water == 6 ~ 3),
+               power = case_when(power == 1 ~ 1, power == 2 ~ 2), 
+               pave = case_when(pave == 1 ~ 1, pave == 2 ~ 2), 
+               house = case_when(house == 1 ~ 1, house == 2 ~ 2, house == 3 ~ 3, house == 4 | house == 5 | house == 6 ~ 4, house == 7 ~ 5)) %>%
+    select( . , 
+            UF, PESO_FINAL, house.control, rooms, bedrooms, bathrooms, 
+            floor, water, power, flush, pave, house, wall, roof, trash) %>%
+    as_tibble()
+
+
+
+
+
+#######################################################################
 
 
 
